@@ -1,11 +1,23 @@
 class Account {
 
-  constructor(username) { // Can set balance param and set to zero: balance = 0
+  constructor(username) {
     this.username = username;
-    // Have account balance start at $0 since that makes more sense.
-    this.balance = 0;
-    this.transaction = {};
+    this.transactions = [];
   }
+
+  get balance() {
+    // Calculate the balance using the transaction objects.
+    let balance = 0;
+    for (const bal of this.transactions) {
+      balance += bal.value;
+    }
+    return balance;
+  }
+
+  addTransaction(transaction) {
+    this.transactions.push(transaction);
+  }
+
 }
 
 class Transaction {
@@ -13,15 +25,15 @@ class Transaction {
   constructor(amount, account) {
     this.amount = amount;
     this.account = account;
-    this.account.transaction = `${this.account}`;
   }
 
   commit() {
-    this.account.balance += this.value;
-  }
-
-  history() {
-    return this.account.history;
+    if (!this.isAllowed()) return false;
+    // Keep track of the time of the transaction
+    this.time = new Date();
+    // Add the transaction to the account
+    this.account.addTransaction(this); // What is (this) referring to here?
+    return true;
   }
 }
 
@@ -30,6 +42,10 @@ class Deposit extends Transaction {
   get value() {
     return this.amount;
   }
+
+  isAllowed() {
+    return true;
+  }
 }
 
 class Withdrawal extends Transaction {
@@ -37,24 +53,51 @@ class Withdrawal extends Transaction {
   get value() {
     return -this.amount;
   }
+
+  isAllowed() {
+    // Notice how it has access to this.account bc of parent
+    return (this.account.balance - this.amount >= 0);
+  }
 }
 
 
 // DRIVER CODE BELOW
 // We use the code below to "drive" the application logic above and make sure it's working as expected
 
-const myAccount = new Account("snow-patrol");
+const myAccount = new Account("Mountain-Lover");
+console.log("Starting Account Balance: ", myAccount.balance);
 
-console.log("Starting balance: ", myAccount.balance);
+console.log("Attemping to withdraw even $1 should fail...");
+const t1 = new Withdrawal(1.00, myAccount);
+console.log("Commit result: ", t1.commit());
+console.log("Account balance: ", myAccount.balance);
 
-t1 = new Deposit(50.25, myAccount);
-t1.commit();
+console.log("Depositing should succeed...");
+const t2 = new Deposit(9.99, myAccount);
+console.log("Commit result: ", t2.commit());
+console.log("Account Balance: ", myAccount.balance);
 
-t2 = new Withdrawal(10, myAccount);
-t2.commit();
+console.log("Withdrawal for 9.99 should be allowed...");
+const t3 = new Withdrawal(9.99, myAccount);
+console.log("Commit result: ", t3.commit());
 
-console.log("Ending Balance:", myAccount.balance);
-console.log("First Transac: ", t1);
+console.log("Ending Account Balance: ", myAccount.balance);
+console.log("Looking like I'm broke again");
+
+console.log("Account Transaction History: ", myAccount.balance);
+
+// const myAccount = new Account("snow-patrol");
+
+// console.log("Starting balance: ", myAccount.balance);
+
+// t1 = new Deposit(50.25, myAccount);
+// t1.commit();
+
+// t2 = new Withdrawal(10, myAccount);
+// t2.commit();
+
+// console.log("Ending Balance:", myAccount.balance);
+// console.log("First Transac: ", t1);
 
 // t2 = new Withdrawal(9.99);
 // t2.commit();
@@ -77,28 +120,5 @@ t1 = new Deposit(50.25, myAccount);
 */
 
 /* Questions:
-1. In the Deposit transaction, we called on the commit() method. How does the program know
-that you are calling on the commit() method within the Deposit class when the Withdrawal
-class has a method of the same name?
-Answer: Each transaction is either a withdrawal or deposit. When you call commit(), you first specify
-which transaction that commit() relates to.
-
-2. Why is snow patrol account stored in a const variable when the instance is created?
-Why can't you just do 'account = new Account("snow-patrol")' or just 'new Account("snow-patrol")'?
-Answer: So you can call on that variable storing the specific account object created.
-
-3. How do you print all of the accounts created so far?
-Answer: console.log(Accounts) WILL NOT WORK.
-To do so, create an object that contains all of the individual account objects.
-
-const allAccounts = {
-  myAccount,
-  Raiza: anotherAccount
-};
-
-We are not storing these accounts in a database. They're stored in the PC's memory.
-Therefore, use this approach of storing info in a variable or object.
-
-Object short-hand
 
 */
